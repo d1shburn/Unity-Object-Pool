@@ -1,0 +1,39 @@
+﻿using System.Collections;
+using UnityEngine;
+using Zenject;
+
+public class Weapon : MonoBehaviour
+{
+    [SerializeField] private GameObject _bulletPrefab;
+    [SerializeField] private Transform _firePoint;
+
+    private IObjectPoolService _pool;
+
+    [Inject]
+    public void Construct(IObjectPoolService pool) =>
+        _pool = pool;
+
+    private void Start()
+    {
+        // You can create 5 bullets in advance
+        _pool.Prewarm(_bulletPrefab, 5);
+    }
+
+    public void Shoot()
+    {
+        // Here's the logic of spawn bullets
+        var bullet = _pool.Spawn(
+            _bulletPrefab, _firePoint.position, _firePoint.rotation);
+
+        // Launching a coroutine to return the bullet to the pool
+        StartCoroutine(DespawnRoutine(bullet));
+    }
+
+    private IEnumerator DespawnRoutine(GameObject target)
+    {
+        yield return new WaitForSeconds(2f);
+
+        // Returning the bullet to the pool
+        _pool.Despawn(target);
+    }
+}
